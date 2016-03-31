@@ -1,5 +1,5 @@
 {
-  "name": "video-chat-web-component",
+  "name": "twilio-video-chat-web-component",
   "version": "1.0.0",
   "description": "A Twilio Video based Web Component",
   "main": "index.js",
