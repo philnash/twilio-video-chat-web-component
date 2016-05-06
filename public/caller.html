@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Video Chat Web Component</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+  <link href="/css/app.css" rel="stylesheet">
+  <link rel="import" href="/twilio-video.html">
+</head>
+<body>
+  <div class="site-wrapper">
+    <div class="site-wrapper-inner">
+      <div class="cover-container">
+        <div class="masthead clearfix">
+          <div class="inner">
+            <h3 class="masthead-brand">Video Chat</h3>
+          </div>
+        </div>
+
+        <div class="inner cover">
+
+        </div>
+
+        <div class="mastfoot">
+          <div class="inner">
+            <p><a href="http://twilio.com/video">Twilio Video</a> web component example, by <a href="https://twitter.com/philnash">Phil Nash</a>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://media.twiliocdn.com/sdk/js/common/v0.1/twilio-common.min.js"></script>
+  <script src="https://media.twiliocdn.com/sdk/js/conversations/v0.13/twilio-conversations.min.js"></script>
+
+  <script type="text/javascript">
+    fetch("/token?identity=caller").then(function(data){
+      return data.json();
+    }).then(function(obj){
+      var accessManager = new Twilio.AccessManager(obj.token);
+      var conversationsClient = new Twilio.Conversations.Client(accessManager);
+      conversationsClient.inviteToConversation("phil");
+    });
+
+  </script>
+</body>
+</html>
