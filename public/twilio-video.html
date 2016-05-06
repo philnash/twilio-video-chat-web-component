@@ -1,0 +1,152 @@
+<script src="https://media.twiliocdn.com/sdk/js/common/v0.1/twilio-common.min.js"></script>
+<script src="https://media.twiliocdn.com/sdk/js/conversations/v0.13/twilio-conversations.min.js"></script>
+
+<template id="twilio-video-template">
+  <style type="text/css">
+  :host {
+    display: block;
+  }
+  #picture-in-picture {
+    position: relative;
+    width: 400px;
+    height: 300px;
+  }
+  .hidden {
+    display: none;
+  }
+  #caller {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+  #caller video,
+  #me video {
+    width: 100%;
+  }
+  #me {
+    position: absolute;
+    width: 25%;
+    bottom: 5%;
+    right: 5%;
+  }
+  #hangup {
+    position: absolute;
+    bottom: 5%;
+    left: 5%;
+  }
+  </style>
+
+  <div id="picture-in-picture" class="hidden">
+    <div id="caller"></div>
+    <div id="me"></div>
+    <button id="hangup">Hangup</button>
+  </div>
+</template>
+
+<script>
+  var TwilioVideoPrototype = Object.create(HTMLElement.prototype);
+  var importDoc = document.currentScript.ownerDocument;
+
+  // Fetch the access token from the server
+  TwilioVideoPrototype.fetchToken = function(identity) {
+    return fetch("/token?identity=" + identity).then(function(data){
+      return data.json();
+    });
+  }
+
+  // Initialise an access manager with the token, then initialise a conversation
+  // client using that access manager and listen for incoming invites.
+  TwilioVideoPrototype.createClient = function(obj) {
+    var accessManager = new Twilio.AccessManager(obj.token);
+    this.conversationsClient = new Twilio.Conversations.Client(accessManager);
+    return this.conversationsClient.listen();
+  }
+
+  // Prepare the behaviour for a conversation client when an invite is received.
+  TwilioVideoPrototype.setupClient = function() {
+    this.conversationsClient.on("invite", this.inviteReceived.bind(this));
+  }
+
+  // Accept the invite
+  TwilioVideoPrototype.inviteReceived = function(invite){
+    invite.accept().then(this.setupConversation.bind(this));
+  }
+
+  // Now a conversation has started show our local video stream and setup
+  // listeners for the participant joining. We also handle other conversation
+  // lifecycle events here, like when the conversation is disconnected, and
+  // when the hangup button is pressed.
+  TwilioVideoPrototype.setupConversation = function(conversation) {
+    this.currentConversation = conversation;
+    conversation.localMedia.attach(this.me);
+    this.chat.classList.remove("hidden");
+    this.hangup.addEventListener("click", this.disconnect.bind(this));
+    conversation.on("participantConnected", this.participantConnected.bind(this));
+    conversation.on("disconnected", this.disconnected.bind(this));
+  }
+
+  // When a participant joins the conversation, add their media stream to the
+  // page.
+  TwilioVideoPrototype.participantConnected = function(participant) {
+    participant.media.attach(this.caller);
+  }
+
+  // When the conversation is disconnected, hide the contents and remove
+  // the click handler on the hangup button.
+  TwilioVideoPrototype.disconnected = function() {
+    this.chat.classList.add("hidden");
+    this.currentConversation.localMedia.detach();
+    this.hangup.removeEventListener("click", this.disconnect.bind(this));
+  }
+
+  // Hang up the current conversation.
+  TwilioVideoPrototype.disconnect = function() {
+    if(this.currentConversation){
+      this.currentConversation.disconnect();
+      this.currentConversation = null;
+    }
+  }
+
+  TwilioVideoPrototype.createdCallback = function() {
+    // Grab the template, clone it and attach it to the shadow root
+    var template = importDoc.getElementById("twilio-video-template");
+    var clone = importDoc.importNode(template.content, true);
+    var shadowRoot = this.createShadowRoot();
+    shadowRoot.appendChild(clone);
+
+    // Get the identity from the custom element's attribute
+    var identity = this.getAttribute("identity") || "example";
+
+    // Grab the HTML elements we need to refer to later.
+    // me is the placeholder for the local media stream.
+    this.me = shadowRoot.getElementById("me");
+    // caller is the placeholder for the remote media stream.
+    this.caller = shadowRoot.getElementById("caller");
+    // chat is the whole chat element including videos and hangup button.
+    this.chat = shadowRoot.getElementById("picture-in-picture");
+    // hangup is a button that can be used to end conversations
+    this.hangup = shadowRoot.getElementById("hangup");
+    // Start the process by fetching the token from the server and setting up
+    // the conversation client.
+    this.fetchToken(identity).
+      then(this.createClient.bind(this)).
+      then(this.setupClient.bind(this)).
+      catch(function(err) {
+        console.log(err);
+      });
+  }
+
+  // When the <twilio-video> element is removed from the page, this will be
+  // called. We use the opportunity to hang up any current calls and stop the
+  // conversation client from listening for incoming invites.
+  TwilioVideoPrototype.detachedCallback = function() {
+    this.disconnect();
+    this.conversationsClient.unlisten();
+  }
+
+  document.registerElement("twilio-video", {
+    prototype: TwilioVideoPrototype
+  });
+</script>
