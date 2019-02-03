@@ -1,6 +1,10 @@
-# Twilio Video Chat Web Component
+# Twilio Video Chat Web Component [Deprecated]
 
-An example application that turns a [Twilio Video](http://twilio.com/video) chat into a Web Component.
+An example application that turns a [Twilio Video](https://www.twilio.com/video) chat into a Web Component.
+
+## _301 redirect_
+
+_This project was built with an old, deprecated version of the Twilio Video SDK. I recommend you check out the latest [Twilio Video Quickstart](https://github.com/twilio/video-quickstart-js) to see how to build with Twilio Video._
 
 ## Setup
 
